@@ -2,7 +2,7 @@
 
 # Overview
 
-A Spring Boot application for reading and extracting text from PDF files using Apache PDFBox.
+A Spring Boot application for reading and extracting text from PDF files.
 
 # Technologies
 
