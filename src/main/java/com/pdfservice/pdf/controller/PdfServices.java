@@ -28,7 +28,7 @@ public class PdfServices {
     }
 
   private final String apiUrl = "https://api.groq.com/openai/v1/chat/completions"; // Set your API URL
-    private final String apiKey = "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"; // Set your API Key
+    private final String apiKey = ""; // Set your API Key
 
     public String processPdf(MultipartFile file,int line) {
         try (PDDocument document = PDDocument.load(file.getInputStream())) {
