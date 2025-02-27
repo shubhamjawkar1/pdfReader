@@ -2,13 +2,16 @@ package com.pdfservice.pdf.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 public class PdfController {
@@ -17,27 +20,27 @@ public class PdfController {
     @PostMapping("pdf/text/view")
     public ResponseEntity<String> viewTextPdf(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No file found.");
+            return ResponseEntity.badRequest().body("No file found.");
         }
-        String originalFilename = file.getOriginalFilename();//get file name to check format
+        String originalFilename = file.getOriginalFilename();
         if (originalFilename == null || !originalFilename.toLowerCase().endsWith(".pdf")) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Format not match,Only PDF file are allowed.");
+            return ResponseEntity.badRequest().body("Format not match,Only PDF file are allowed.");
         }
         try {
             return new ResponseEntity<>(pdfServices.viewTextPdf(file), HttpStatus.OK);
 
         } catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "can't able to process file");
+            return ResponseEntity.badRequest().body("can't able to process file");
         }
     }
     @PostMapping("pdf/view")
-    public ResponseEntity<byte[]> viewPdf(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> viewPdf(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No file uploaded.");
+            return ResponseEntity.badRequest().body("No file found.");
         }
         String originalFilename = file.getOriginalFilename();
         if (originalFilename == null || !originalFilename.toLowerCase().endsWith(".pdf")) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Format not match. Only PDF files are allowed.");
+            return ResponseEntity.badRequest().body( "Format not match. Only PDF files are allowed.");
         }
         try {
             byte[] pdfData = file.getBytes();
@@ -46,7 +49,23 @@ public class PdfController {
             headers.setContentDisposition(ContentDisposition.inline().filename(originalFilename).build());
             return new ResponseEntity<>(pdfData, headers, HttpStatus.OK);
         } catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to process file", e);
+            return ResponseEntity.badRequest().body( "Unable to process file");
         }
+    }
+    @PostMapping("summarize/pdfs/line/{line}")
+    public ResponseEntity<Map<String, String>> summarizePdfs(@RequestParam("files") MultipartFile[] files, @PathVariable int line ) {
+        Map<String, String> summaries = new HashMap<>();
+
+        for (MultipartFile file : files) {
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || !originalFilename.toLowerCase().endsWith(".pdf")) {
+                summaries.put(originalFilename, "Invalid format. Only PDF files are allowed.");
+                continue;
+            }
+            String summary = pdfServices.processPdf(file, line);
+            summaries.put(originalFilename, summary);
+        }
+
+        return new ResponseEntity<>(summaries, HttpStatus.OK);
     }
 }
